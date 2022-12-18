@@ -6,7 +6,7 @@ from function import *
 from sklearn.model_selection import train_test_split
 from keras.utils import to_categorical
 from keras.models import Sequential
-from keras.layers import LSTM, Dense, Conv2D, MaxPooling2D, Flatten, TimeDistributed, Dropout
+# from keras.layers import LSTM, Dense, Conv2D, MaxPooling2D, Flatten, TimeDistributed, Dropout
 from keras.callbacks import TensorBoard
 from sklearn.svm import SVC
 import matplotlib.pyplot as plt
@@ -24,29 +24,21 @@ for action in actions:
 
 X = np.array(sequences)
 y = to_categorical(labels).astype(int)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 X_train = np.array(X_train)
 X_test = np.array(X_test)
 y_train = np.array(y_train)
 y_test = np.array(y_test)
 print(X_train.shape)
 print(y_train.shape)
-svc = SVC(kernel='rbf', C=1).fit(X_train, y_train)
-# X_test1 = X_test.resize(11700,63)
-y_pred = svc.predict(X_test)
-# X_train = X_train.astype('float32')
-# X_test = X_test.astype('float32')
-# X_train = X_train.reshape(X_train.shape)
-# X_train/=255
-# X_test/=255
 log_dir = os.path.join('Logs')
 tb_callback = TensorBoard(log_dir=log_dir)
 model = keras.Sequential([
-        keras.layers.Conv2D(512, (3,3), activation='relu', input_shape=(30,63,1)),
+        keras.layers.Conv2D(512, (3, 3), activation='relu', input_shape=(50, 63, 1)),
         keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        keras.layers.Conv2D(256,(3,3) , activation='relu'),
+        keras.layers.Conv2D(256, (3, 3), activation='relu'),
         keras.layers.MaxPooling2D(pool_size=(2, 2)),
-        keras.layers.Conv2D(256,(3,3) , activation='relu'),
+        keras.layers.Conv2D(256, (3, 3), activation='relu'),
         keras.layers.MaxPooling2D(pool_size=(2, 2)),
         keras.layers.Dense(256),
         keras.layers.Dense(128),
@@ -63,7 +55,7 @@ model = keras.Sequential([
 res = [.7, 0.2, 0.1]
 
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-history = model.fit(X_train, y_train ,batch_size=128, epochs=200 ,validation_data=(X_test, y_test))
+history = model.fit(X_train, y_train ,batch_size=128, epochs=6,validation_data=(X_test, y_test))
 model.summary()
 plt.plot(history.history['accuracy'])
 plt.plot(history.history['val_accuracy'])
@@ -79,7 +71,12 @@ plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'validation'], loc='upper left')
 plt.show()
+Y_pred = (model.predict(X_test) > 0.6).astype("int32")
+y_pred = np.argmax(Y_pred, axis =1)
+p=model.predict(X_test)
+print(classification_report(np.argmax(y_test, axis=1), y_pred, target_names = actions))
+print(confusion_matrix(np.argmax(y_test, axis=1), y_pred))
 model_json = model.to_json()
-with open("model.json", "w") as json_file:
+with open("model1.json", "w") as json_file:
     json_file.write(model_json)
-model.save('model.h5')
+model.save('model1.h5')
